@@ -437,6 +437,9 @@ class Trainer:
                             compress_bias = conf_network['compress_bias'], vanilla = conf_network['vanilla'], mode = conf_network['mode'], \
                             boundary = conf_network['boundary'], num_classes = conf_dataset['num_classes'], large = large, \
                             no_shift=conf_network['no_shift'])
+        else:
+            network_name = conf_network['name']
+            raise Exception(f'Not implemented for network {network_name}')
 
         model.apply_straight_through(not conf_network['vanilla'])
         model.apply_compress_bias(conf_network['compress_bias'])
@@ -482,6 +485,10 @@ class Trainer:
                 model = ch.nn.parallel.DistributedDataParallel(model, device_ids=[self.dist._gpu])
                 for group in prob_models:
                     prob_models[group] = ch.nn.parallel.DistributedDataParallel(prob_models[group], device_ids=[self.dist._gpu])
+            else:
+                model = gpu_wrapper(model, self.dist)
+                for group in prob_models:
+                    prob_models[group] = gpu_wrapper(prob_models[group],self.dist)
         else:
             model = gpu_wrapper(model, self.dist)
             for group in prob_models:

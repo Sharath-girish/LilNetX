@@ -4,6 +4,7 @@ import numpy as np
 from torch import Tensor
 from layers import Conv2d, Linear, ConvDecoder, DenseDecoder
 import torch.nn as nn
+import torch.nn.functional as F
 from typing import Type, Any, Callable, Union, List, Optional
 
 
