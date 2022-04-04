@@ -1,0 +1,110 @@
+dist:
+  enabled: False
+  world_size: 1
+  local_rank: 0
+  port: 12355
+  address: 'localhost'
+  sync_bn: False
+
+checkpoint:
+  save_dir: 'results/cifar10_r20'
+  filename: 'checkpoint.pth'
+  resume_path: 'results/cifar10_r20/checkpoint.pth'
+  resume: False
+  stop_if_complete: True
+  clear_if_exists: False
+
+trainer:
+  epochs: 10
+  train_batch: 256
+  test_batch: 256
+  max_batches: -1 # number of batches per training epoch, useful for debugging, -1 for full training
+
+ffcv:
+  enabled: False
+  min_res: 168
+  max_res: 192
+  test_res: 256
+  start_ramp: 23
+  end_ramp: 32
+  flip_test: False
+  in_memory: True
+
+lr_schedule:
+  arch_lr: 0.01
+  type: 'cosine'
+  decay_steps: [75, 125]
+  gamma: 0.1
+  warmup_epochs: 5
+  prob_lr: 1.0e-4
+  plateau_epochs: '_copy: /trainer/epochs'
+
+common:
+  seed: 420
+  eval_only: False
+
+wandb:
+  enabled: True
+  project_name: 'test_lilnetx'
+  run_name: 'cifar10_r20_v1'
+  dir: '_copy: /checkpoint/save_dir'
+  resume: True
+  entity: 'sgirish'
+
+logging:
+  use_ac: True
+  calc_sparse_stats: True
+  save_freq: 0
+  print_freq: 50
+
+dataset:
+  name: 'cifar10'
+  trainroot: 'data/'
+  valroot: '_copy: /dataset/trainroot'
+  num_workers: 4
+
+network:
+  name: 'resnet20'
+  vanilla: False
+  width: 4
+  init_type: 'random'
+  compress_bias: False
+  mode: 'fan_out'
+  boundary: 3
+  no_shift: True
+  single_prob_model: False
+  first: True # Quantize mobilenet first convolution
+  apply_blur: True # Set downsampling operations to blur
+
+losses:
+  reg_weight: 1.0e-4
+  reg_weight_warmup: 0
+  wd:
+    weights: 1.0e-6
+    bn: 0.0
+    bias: 0.0
+    decoder: 0.0
+    modules: ['conv1x1', 'conv3x3', 'dense']
+  gd:
+    weights: 1.0e-6
+    modules: ['conv3x3']
+    enable_l1: False
+    order: 'l2'
+
+optimizer:
+  name: 'adam'
+  momentum: 0.9
+  use_nesterov: False
+  grad_clip: 0.0
+
+
+  
+
+
+
+
+
+
+
+
+
