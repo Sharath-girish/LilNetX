@@ -1,101 +1,116 @@
+# Distributed training params
 dist:
-  enabled: False
-  world_size: 1
-  local_rank: 0
-  port: 12355
-  address: 'localhost'
-  sync_bn: False
+  enabled: False   # Enable distributed training mode
+  world_size: 1   # Number of nodes/processes for distributed training
+  local_rank: 0 # Default rank for current process
+  port: 12355   # Distributed training port
+  address: 'localhost'   # Distributed training address
+  sync_bn: False   # Converts all BatchNorm layers in the network to SyncBatchNorm when distributed training (TODO: untested)
 
+# Checkpoint related params
 checkpoint:
-  save_dir: 'results/cifar10_r20'
-  filename: 'checkpoint.pth'
-  resume_path: 'results/cifar10_r20/checkpoint.pth'
-  resume: False
-  stop_if_complete: True
-  clear_if_exists: False
+  save_dir: 'results/cifar10_r20'  # Checkpoint save directory
+  filename: 'checkpoint.pth'   # Checkpoint filename
+  resume: False   # Whether to resume training from existing checkpoint
+  resume_path: 'results/cifar10_r20/checkpoint.pth'   # Path to resume checkpoint if resume enabled
+  stop_if_complete: True   # Doesn't restart training if {save_dir/filename} is a checkpoint after completed training
+  clear_if_exists: False   # Deletes checkpoint save directory if exists
 
+# Training hyperparams
 trainer:
-  epochs: 10
-  train_batch: 256
-  test_batch: 256
-  max_batches: -1 # number of batches per training epoch, useful for debugging, -1 for full training
+  epochs: 10   # Number of epochs of training
+  train_batch: 256   # Train batch size
+  test_batch: 256   # Test batch size
+  max_batches: -1   # Number of batches per training epoch, useful for debugging, -1 for full training
 
+# FFCV hyperparameters
 ffcv:
-  enabled: False
-  min_res: 168
-  max_res: 192
-  test_res: 256
-  start_ramp: 23
-  end_ramp: 32
-  flip_test: False
-  in_memory: True
+  enabled: False   # Enable FFCV training for ImageNet experiments
+  min_res: 168   # Minimum starting resolution of images
+  max_res: 192   # Maximum resolution of images 
+  test_res: 256   # Test-time resolution of images
+  start_ramp: 23   # When to start interpolating resolution between min_res and max_res
+  end_ramp: 32   # When to stop interpolating resolution between min_res and max_res
+  flip_test: False   # Do LR-flipping of images at test time
+  in_memory: True   # Fit dataset in memory, enable for faster dataloading if enough RAM
 
+# LR Scheduling hyperparams
 lr_schedule:
-  arch_lr: 0.01
-  type: 'cosine'
-  decay_steps: [75, 125]
-  gamma: 0.1
-  warmup_epochs: 5
-  prob_lr: 1.0e-4
-  plateau_epochs: '_copy: /trainer/epochs'
+  arch_lr: 0.01   # LR for architecture as well as weight decoders parameters
+  type: 'cosine'   # Type of LR schedule, choose from ['nstep', 'cosine', 'cyclic']
+  decay_steps: [75, 125]   # Epochs to decay LR if schedule is nstep
+  gamma: 0.1   # Decay step parameter for LR if schedule is nstep
+  warmup_epochs: 5   # Number of epochs for linearly warming up LR
+  prob_lr: 1.0e-4   # LR for probability model parameters
+  plateau_epochs: '_copy: /trainer/epochs'   # Epoch at which to stop decaying LR and keep fixed till end of training
 
+# Miscellaneous common params
 common:
-  seed: 420
-  eval_only: False
+  seed: 420   # Random seed for training (TODO: exact reproducibility is still not guaranteed)
+  eval_only: False   # Only perform evaluation
 
+# Wandb logging params
 wandb:
-  enabled: True
-  project_name: 'test_lilnetx'
-  run_name: 'cifar10_r20_v1'
-  dir: '_copy: /checkpoint/save_dir'
-  resume: True
-  entity: 'sgirish'
+  enabled: True   # Enable wandb logging
+  project_name: 'test_lilnetx'   # Wandb project name
+  run_name: 'cifar10_r20_v1'   # Wandb run name
+  dir: '_copy: /checkpoint/save_dir'   # Directory for saving wandb logged data
+  resume: True   # Resume parameter for wandb init
+  entity: 'user'   # Wandb username
 
+# Standard logging params
 logging:
-  use_ac: True
-  calc_sparse_stats: True
-  save_freq: 0
-  print_freq: 50
+  use_ac: True   # Use torchac arithmetic coding to count actual number of bits for storing quantized weights 
+  calc_sparse_stats: True   # Calculate sparsity statistics for weights being quantized
+  save_freq: 0   # Saves separate checkpoints for every save_freq epcosh, set to 0 if only saving overwritten checkpoint every epoch
+  print_freq: 50   # Number of iterations for logger print frequency 
 
+# Dataset params
 dataset:
-  name: 'cifar10'
-  trainroot: 'data/'
-  valroot: '_copy: /dataset/trainroot'
-  num_workers: 4
+  name: 'cifar10'   # Dataset name, choose from ['cifar10', 'cifar100', 'imagenet']
+  trainroot: 'data/'   # Root directory containing train data (or root filename if FFCV)
+  valroot: '_copy: /dataset/trainroot' # Root directory containing test data (or root filename if FFCV)
+  num_workers: 4   # Number of workers for dataloading
 
+# Network architecture params
 network:
-  name: 'resnet20'
-  vanilla: False
-  width: 4
-  init_type: 'random'
-  compress_bias: False
-  mode: 'fan_out'
-  boundary: 3
-  no_shift: True
-  single_prob_model: False
+  name: 'resnet20'   # Architecture name - Choose from cifar_networks in main.py if dataset is cifar, else from ['resnet18', 'resnet50']
+  vanilla: False   # Do vanilla network training with no weight quantization/decoding
+  width: 4    # Width hyperparameter for resnets
+  # Initialization type for weight decoders and weights. 
+  # For cifar networks, weight decoders initialized with identity matrix if init_type is not 'random'
+  # For imagenet networks, if init_type is 'var', boundary is calculated for each decoder and corresponding layer weight based on paper
+  init_type: 'random'   
+  compress_bias: False   # Quantize and decode biases as well
+  mode: 'fan_out'   # Initialization mode for weights
+  boundary: 3   # Boundary value used for controlling weight variance, refer to paper supplementary for details
+  no_shift: True   # Disable shift parameter if true. Necessary for computational benefits in terms of slice sparsity for decoded weights
+  single_prob_model: False   # Use single probability model for every dimension of a single weight group
   first: True # Quantize mobilenet first convolution
-  apply_blur: True # Set downsampling operations to blur
+  apply_blur: True # Set downsampling operations to blur if FFCV
 
+# Loss weights and params
 losses:
-  reg_weight: 1.0e-4
-  reg_weight_warmup: 0
-  wd:
-    weights: 1.0e-6
-    bn: 0.0
-    bias: 0.0
-    decoder: 0.0
-    modules: ['conv1x1', 'conv3x3', 'dense']
-  gd:
-    weights: 1.0e-6
-    modules: ['conv3x3']
-    enable_l1: False
-    order: 'l2'
+  reg_weight: 1.0e-4    # Entropy regularization loss weight
+  reg_weight_warmup: 0   # Linear warmup epochs for entropy regularization loss weight
+  wd:   # L2 weight decay values
+    weights: 1.0e-6   # Conv/FC weight params
+    bn: 0.0   # Batch-norm params
+    bias: 0.0   # Bias params
+    decoder: 0.0   # Decoder params
+    modules: ['conv1x1', 'conv3x3', 'dense']   # Weight parameter groups to apply L2 reg
+  gd:   # Group decay values
+    weights: 1.0e-6   # Conv/FC weight params
+    modules: ['conv3x3']   # Weight parameter groups to apply group decay regularization
+    enable_l1: False   # Enable L1 weight decay as well for the weight groups with same weight
+    order: 'l2'   # Type of group decay, 'l2' for 2-norm, 'l1' for 1-norm, 'linf' for infinity-norm
 
+# Optimizer hyperparams
 optimizer:
-  name: 'adam'
-  momentum: 0.9
-  use_nesterov: False
-  grad_clip: 0.0
+  name: 'adam'   # Type of optimizer
+  momentum: 0.9   # Momentum parameter for SGD
+  use_nesterov: False   # Enable Nesterov momentum for SGD
+  grad_clip: 0.0   # Clip gradient based on L2-norm of weights, set to 0 for disabling
 
 
   

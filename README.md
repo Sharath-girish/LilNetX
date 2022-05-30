@@ -7,7 +7,7 @@ Create new virtualenv/conda environment and run the following command
 ```
 pip install -r requirements.txt
 ```
-To run ImageNet experiments with the faster FFCV implementations, follow instructions on https://github.com/libffcv/ffcv to install the FFCV library.
+To run ImageNet experiments with the faster FFCV implementation, follow instructions on https://github.com/libffcv/ffcv to install the FFCV library.
 
 ## Example commands
 Hyperparameters are defined in yaml files in the [configs](configs/) folder. An example run command for training a ResNet20 with width 4 on the Cifar10 dataset would look like
