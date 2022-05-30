@@ -1,5 +1,5 @@
 # LilNetX
-Official PyTorch implementation of LilNetX: Lightweight Networks with EXtreme Model Compression and Structured Sparsification
+Official PyTorch implementation of [LilNetX: Lightweight Networks with EXtreme Model Compression and Structured Sparsification](https://arxiv.org/abs/2204.02965)
 
 
 ## Installation
